@@ -1,12 +1,8 @@
+use std::fs::File;
 use std::io::Read;
 use std::time::Instant;
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-};
 
 use day2::Day2;
-// use day1::part2;
 
 pub(crate) trait Puzzle {
     fn new(input: String) -> Self;
@@ -41,13 +37,6 @@ pub(crate) fn read_file_to_str(path: &str) -> anyhow::Result<String> {
     let mut string = String::new();
     file.read_to_string(&mut string).unwrap();
     Ok(string)
-}
-
-pub(crate) fn read_file_to_vec(path: &str) -> Result<Vec<String>, anyhow::Error> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
-    Ok(lines)
 }
 
 pub(crate) fn input_as_num_vec(input: String) -> Vec<Vec<i64>> {
