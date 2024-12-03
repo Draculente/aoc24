@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use regex::Regex;
 
 use crate::Puzzle;
@@ -13,24 +12,22 @@ impl Puzzle for Day3 {
     }
 
     fn part_one(&mut self) -> i64 {
-        let re = Regex::new(r"mul\(\d{1,3},\d{1,3}\)").unwrap();
+        let re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)").unwrap();
         re.captures_iter(&self.input)
-            .map(|m| m.extract::<0>().0)
-            .map(|v| calc_expr(v).unwrap())
+            .map(|m| m.extract::<2>())
+            .map(|(v, operands)| calc_expr(v, operands).unwrap())
             .sum()
     }
 
     fn part_two(&mut self) -> i64 {
-        let re = Regex::new(r"mul\(\d{1,3},\d{1,3}\)|don't\(\)|do\(\)").unwrap();
+        let re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)|(don't)(\(\))|(do)(\(\))").unwrap();
         re.captures_iter(&self.input)
-            .map(|m| m.extract::<0>().0)
-            .fold((true, 0), |(allowed, v), e| {
-                if e.starts_with("don't") {
-                    (false, v)
-                } else if e.starts_with("do()") {
-                    (true, v)
+            .map(|m| m.extract::<2>())
+            .fold((true, 0), |(allowed, v), (e, operands)| {
+                if e.starts_with("do") {
+                    (e.starts_with("do()"), v)
                 } else if allowed {
-                    (true, v + calc_expr(e).unwrap())
+                    (true, v + calc_expr(e, operands).unwrap())
                 } else {
                     (false, v)
                 }
@@ -39,19 +36,23 @@ impl Puzzle for Day3 {
     }
 }
 
-fn calc_expr(expr: &str) -> anyhow::Result<i64> {
-    let num_re = Regex::new(r"\d+").unwrap();
-    let operands: Vec<i64> = num_re
-        .captures_iter(expr)
-        .map(|v| v.extract::<0>().0.parse::<i64>())
+fn calc_expr(_: &str, operands: [&str; 2]) -> anyhow::Result<i64> {
+    Ok(operands.iter().map(|v| v.parse::<i64>().unwrap()).product())
+
+    // The following if there would be more operators
+    /*
+    let operands: Vec<i64> = operands
+        .iter()
+        .map(|v| v.parse::<i64>())
         .collect::<Result<Vec<i64>, _>>()?;
 
-    let op = expr.split('(').take(1).collect::<Vec<&str>>().join("");
+        let op = expr.split('(').take(1).collect::<Vec<&str>>().join("");
 
     match op.as_str() {
         "mul" => Ok(operands.iter().product()),
         _ => Err(anyhow!("unknown operator")),
     }
+    */
 }
 
 #[cfg(test)]
