@@ -47,9 +47,18 @@ fn check_for_x((a_pos_line, a_pos_char): (i64, i64), chars: &Vec<Vec<char>>) -> 
         .collect();
 
     vals.len() == 4
-        && vals.iter().filter(|l| ***l == 'M').count() == 2
-        && vals.iter().filter(|l| ***l == 'S').count() == 2
+        && vals.char_count(&&'M') == vals.char_count(&&'S')
         && vals.windows(2).any(|w| w[0] == w[1])
+}
+
+trait CharCounter<A> {
+    fn char_count(self, c: A) -> usize;
+}
+
+impl<'a, A: PartialEq> CharCounter<A> for &'a Vec<A> {
+    fn char_count(self, c: A) -> usize {
+        self.iter().filter(|l| l == &&c).count()
+    }
 }
 
 fn find_letters(chars: &Vec<Vec<char>>, letter_to_find: char) -> Vec<(i64, i64)> {
