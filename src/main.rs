@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::time::Instant;
 
-use day4::Day4;
+use day5::Day5;
 
 pub(crate) trait Puzzle {
     fn new(input: String) -> Self;
@@ -14,10 +14,11 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 fn main() {
-    let input = read_file_to_str("./inputs/day4.txt").unwrap();
-    let puzzle = Day4::new(input);
+    let input = read_file_to_str("./inputs/day5.txt").unwrap();
+    let puzzle = Day5::new(input);
 
     execute_puzzle(puzzle);
 }
