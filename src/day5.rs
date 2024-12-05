@@ -1,18 +1,33 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use crate::Puzzle;
 
+#[derive(Debug)]
 pub struct Day5 {
-    rules: HashMap<i64, i64>,
+    rules: Vec<(i64, i64)>,
     page_updates: Vec<Vec<i64>>,
+}
+
+impl Day5 {
+    fn get_shall_not_appear(&self, key: i64) -> Vec<i64> {
+        self.rules
+            .iter()
+            .filter(|(a, _)| a == &key)
+            .map(|a| a.1)
+            .collect()
+    }
+
+    fn has_rule(&self, before: i64, shall_not_appear_after: i64) -> bool {
+        self.get_shall_not_appear(before)
+            .contains(&shall_not_appear_after)
+    }
 }
 
 impl Puzzle for Day5 {
     fn new(input: String) -> Self {
         let (raw_rules, raw_page_updates) = input.split_once("\n\n").unwrap();
-        let rules: HashMap<i64, i64> = raw_rules
+        let rules: Vec<(i64, i64)> = raw_rules
             .lines()
-            .into_iter()
             .filter_map(|l| l.split_once("|"))
             .map(|(before, after)| {
                 (
@@ -26,7 +41,6 @@ impl Puzzle for Day5 {
             .lines()
             .map(|l| {
                 l.split(",")
-                    .into_iter()
                     .map(|v| v.parse::<i64>().unwrap())
                     .collect::<Vec<i64>>()
             })
@@ -43,19 +57,45 @@ impl Puzzle for Day5 {
             .iter()
             .filter(|line| {
                 line.iter().enumerate().all(|(i, page)| {
-                    let shall_not_appear = self.rules.get(page);
+                    let shall_not_appear = self.get_shall_not_appear(*page);
                     line.iter()
-                        .position(|x| shall_not_appear.filter(|s| s == &x).is_some())
-                        .filter(|p| p <= &i)
-                        .is_some()
+                        .skip(i + 1)
+                        .all(|x| shall_not_appear.iter().find(|s| *s == x).is_none())
                 })
             })
-            .filter_map(|line| line.get(line.len() / 2 as usize))
+            .filter_map(|line| line.get(line.len() / 2_usize))
             .sum()
     }
 
     fn part_two(&mut self) -> i64 {
-        todo!()
+        let mut page_updates: Vec<Vec<i64>> = self
+            .page_updates
+            .clone()
+            .into_iter()
+            .filter(|line| {
+                !line.iter().enumerate().all(|(i, page)| {
+                    let shall_not_appear = self.get_shall_not_appear(*page);
+                    line.iter()
+                        .skip(i + 1)
+                        .all(|x| shall_not_appear.iter().find(|s| *s == x).is_none())
+                })
+            })
+            .collect();
+        page_updates.iter_mut().for_each(|line| {
+            line.sort_by(|a, b| {
+                if self.has_rule(*a, *b) {
+                    Ordering::Greater
+                } else if self.has_rule(*b, *a) {
+                    Ordering::Less
+                } else {
+                    Ordering::Equal
+                }
+            })
+        });
+        page_updates
+            .iter()
+            .filter_map(|line| line.get(line.len() / 2_usize))
+            .sum()
     }
 }
 
@@ -95,5 +135,39 @@ mod tests {
 97,13,75,29,47";
         let mut day1 = Day5::new(input.to_string());
         assert_eq!(day1.part_one(), 143);
+    }
+
+    #[test]
+    fn part_two() {
+        let input = "47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47";
+        let mut day1 = Day5::new(input.to_string());
+        assert_eq!(day1.part_two(), 123);
     }
 }
