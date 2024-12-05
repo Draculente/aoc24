@@ -5,12 +5,13 @@ use crate::Puzzle;
 #[derive(Debug)]
 pub struct Day5 {
     rules: Vec<(i64, i64)>,
-    page_updates: Vec<Vec<i64>>,
+    page_updates_correct: Vec<Vec<i64>>,
+    page_updates_incorrect: Vec<Vec<i64>>,
 }
 
 impl Day5 {
-    fn get_shall_not_appear(&self, key: i64) -> Vec<i64> {
-        self.rules
+    fn get_shall_not_appear(rules: &Vec<(i64, i64)>, key: i64) -> Vec<i64> {
+        rules
             .iter()
             .filter(|(a, _)| a == &key)
             .map(|a| a.1)
@@ -18,8 +19,7 @@ impl Day5 {
     }
 
     fn has_rule(&self, before: i64, shall_not_appear_after: i64) -> bool {
-        self.get_shall_not_appear(before)
-            .contains(&shall_not_appear_after)
+        Day5::get_shall_not_appear(&self.rules, before).contains(&shall_not_appear_after)
     }
 }
 
@@ -37,63 +37,53 @@ impl Puzzle for Day5 {
             })
             .collect();
 
-        let page_updates: Vec<Vec<i64>> = raw_page_updates
-            .lines()
-            .map(|l| {
-                l.split(",")
-                    .map(|v| v.parse::<i64>().unwrap())
-                    .collect::<Vec<i64>>()
-            })
-            .collect();
+        let (page_updates_correct, page_updates_incorrect): (Vec<Vec<i64>>, Vec<Vec<i64>>) =
+            raw_page_updates
+                .lines()
+                .map(|l| {
+                    l.split(",")
+                        .map(|v| v.parse::<i64>().unwrap())
+                        .collect::<Vec<i64>>()
+                })
+                .partition(|line| {
+                    line.iter().enumerate().all(|(i, page)| {
+                        let shall_not_appear: Vec<i64> = Day5::get_shall_not_appear(&rules, *page);
+                        line.iter()
+                            .skip(i + 1)
+                            .all(|x| shall_not_appear.iter().find(|s| *s == x).is_none())
+                    })
+                });
 
         Self {
             rules,
-            page_updates,
+            page_updates_correct,
+            page_updates_incorrect,
         }
     }
 
     fn part_one(&mut self) -> i64 {
-        self.page_updates
+        self.page_updates_correct
             .iter()
-            .filter(|line| {
-                line.iter().enumerate().all(|(i, page)| {
-                    let shall_not_appear = self.get_shall_not_appear(*page);
-                    line.iter()
-                        .skip(i + 1)
-                        .all(|x| shall_not_appear.iter().find(|s| *s == x).is_none())
-                })
-            })
             .filter_map(|line| line.get(line.len() / 2_usize))
             .sum()
     }
 
     fn part_two(&mut self) -> i64 {
-        let mut page_updates: Vec<Vec<i64>> = self
-            .page_updates
-            .clone()
-            .into_iter()
-            .filter(|line| {
-                !line.iter().enumerate().all(|(i, page)| {
-                    let shall_not_appear = self.get_shall_not_appear(*page);
-                    line.iter()
-                        .skip(i + 1)
-                        .all(|x| shall_not_appear.iter().find(|s| *s == x).is_none())
-                })
-            })
-            .collect();
-        page_updates.iter_mut().for_each(|line| {
-            line.sort_by(|a, b| {
-                if self.has_rule(*a, *b) {
-                    Ordering::Greater
-                } else if self.has_rule(*b, *a) {
-                    Ordering::Less
-                } else {
-                    Ordering::Equal
-                }
-            })
-        });
+        let mut page_updates: Vec<Vec<i64>> = self.page_updates_incorrect.clone();
         page_updates
-            .iter()
+            .iter_mut()
+            .map(|line| {
+                line.sort_by(|a, b| {
+                    if self.has_rule(*a, *b) {
+                        Ordering::Greater
+                    } else if self.has_rule(*b, *a) {
+                        Ordering::Less
+                    } else {
+                        Ordering::Equal
+                    }
+                });
+                line
+            })
             .filter_map(|line| line.get(line.len() / 2_usize))
             .sum()
     }
