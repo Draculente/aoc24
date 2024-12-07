@@ -32,46 +32,54 @@ impl Direction {
             _ => panic!("Not a valid direction char"),
         }
     }
-
-    fn turn_90(self) -> Self {
-        match self {
-            Direction::Up => Direction::Right,
-            Direction::Down => Direction::Left,
-            Direction::Left => Direction::Up,
-            Direction::Right => Direction::Down,
-        }
-    }
 }
 
 pub struct Day6 {
     map: Vec<Vec<char>>,
+    guard: Guard,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct Guard {
+    direction: Direction,
     // (line_from_top, char_from_left)
     position: (usize, usize),
-    direction: Direction,
+}
+
+impl Guard {
+    fn turn_90(self) -> Self {
+        let direction = match self.direction {
+            Direction::Up => Direction::Right,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+            Direction::Right => Direction::Down,
+        };
+        Self {
+            direction,
+            position: self.position,
+        }
+    }
+
+    fn advance(self, new_position: (usize, usize)) -> Self {
+        Self {
+            direction: self.direction,
+            position: new_position,
+        }
+    }
 }
 
 impl Day6 {
-    fn step(&mut self, extra_block_pos: Option<(usize, usize)>) -> bool {
-        if let Some(in_front) = self.is_in_map(self.direction.next_position(self.position)) {
+    fn step(&self, guard: Guard, extra_block_pos: Option<(usize, usize)>) -> Option<Guard> {
+        if let Some(in_front) = self.is_in_map(guard.direction.next_position(guard.position)) {
             let in_front_char = self.get_char(in_front).unwrap();
 
-            if extra_block_pos.is_some_and(|pos| pos == (0, 0)) {
-                dbg!((self.direction, self.position));
-            }
-
             if in_front_char == '#' || extra_block_pos.is_some_and(|pos| pos == in_front) {
-                self.direction = self.direction.turn_90();
+                return Some(guard.turn_90());
             } else {
-                self.position = in_front;
+                return Some(guard.advance(in_front));
             }
-            return true;
-            // if let Some(next_position) = self.is_in_map(self.direction.next_position(self.position))
-            // {
-            //     self.position = next_position;
-            //     return true;
-            // }
         };
-        false
+        None
     }
 
     fn get_height(&self) -> usize {
@@ -105,21 +113,16 @@ impl Day6 {
             .cloned()
     }
 
-    fn has_loop(&mut self, extra_block_pos: Option<(usize, usize)>) -> bool {
-        let start_pos = self.position;
-        let start_direction = self.direction;
-        let res = {
-            let mut positions = HashSet::new();
-            while self.step(extra_block_pos) {
-                if !positions.insert((self.direction, self.position)) {
-                    return true;
-                }
+    fn has_loop(&self, extra_block_pos: Option<(usize, usize)>) -> bool {
+        let mut positions = HashSet::new();
+        let mut guard = self.guard;
+        while let Some(new_guard) = self.step(guard, extra_block_pos) {
+            if !positions.insert(new_guard) {
+                return true;
             }
-            false
-        };
-        self.position = start_pos;
-        self.direction = start_direction;
-        res
+            guard = new_guard;
+        }
+        false
     }
 }
 
@@ -142,20 +145,21 @@ impl Puzzle for Day6 {
             .collect::<Vec<(Direction, (usize, usize))>>();
 
         let (direction, position) = binding.get(0).unwrap();
-
-        dbg!(direction, position);
-
         Self {
             map,
-            position: position.to_owned(),
-            direction: direction.to_owned(),
+            guard: Guard {
+                position: position.to_owned(),
+                direction: direction.to_owned(),
+            },
         }
     }
 
     fn part_one(&mut self) -> i64 {
         let mut positions = vec![];
-        while self.step(None) {
-            positions.push(self.position);
+        let mut guard = self.guard;
+        while let Some(new_guard) = self.step(guard, None) {
+            positions.push(new_guard.position);
+            guard = new_guard;
         }
         positions.iter().unique().count() as i64
     }
@@ -167,8 +171,8 @@ impl Puzzle for Day6 {
         (0..width)
             .into_iter()
             .flat_map(|w| (0..height).into_iter().map(move |h| (h, w)))
-            .filter(|block_pos| *block_pos != self.position && self.has_loop(Some(*block_pos)))
-            .map(|p| dbg!(p))
+            .filter(|pos| *pos != self.guard.position)
+            .filter(|block_pos| self.has_loop(Some(*block_pos)))
             .count() as i64
     }
 }
