@@ -1,11 +1,8 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::Arc,
-};
+use std::collections::VecDeque;
 
 use itertools::Itertools;
 
-use crate::{input_as_num_vec, input_as_num_vec_digts, Puzzle};
+use crate::{input_as_num_vec_digts, Puzzle};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
