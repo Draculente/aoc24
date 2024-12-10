@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::Read;
 use std::time::Instant;
 
+use day10::Day10;
 use day9::Day9;
 
 pub(crate) trait Puzzle {
@@ -14,6 +15,7 @@ pub(crate) trait Puzzle {
 }
 
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -24,8 +26,8 @@ mod day8;
 mod day9;
 
 fn main() {
-    let input = read_file_to_str("./inputs/day9.txt").unwrap();
-    let puzzle = Day9::new(input);
+    let input = read_file_to_str("./inputs/day10.txt").unwrap();
+    let puzzle = Day10::new(input);
 
     execute_puzzle(puzzle);
 }
@@ -56,6 +58,20 @@ pub(crate) fn input_as_num_vec(input: String) -> Vec<Vec<i64>> {
         .map(|l| {
             l.split_whitespace()
                 .map(|v| v.parse::<i64>().unwrap())
+                .collect::<Vec<i64>>()
+        })
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<Vec<i64>>>()
+}
+
+pub(crate) fn input_as_num_vec_digts(input: String) -> Vec<Vec<i64>> {
+    let lines = input.lines();
+    lines
+        .into_iter()
+        .map(|l| {
+            l.trim()
+                .split("")
+                .filter_map(|v| v.parse::<i64>().ok())
                 .collect::<Vec<i64>>()
         })
         .filter(|l| !l.is_empty())
